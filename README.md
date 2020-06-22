@@ -343,13 +343,13 @@ $ nc <camera_ip> 9030
 $ {"req":"telnet enable","state":"enable","type":1}
 ```
 
-"telnet enable" state needs to be "enable" not "on", enable, on, 1, who cares.
+"telnet enable" state parameter needs to be "enable" not "on". Enable, on, 1, who cares.
 
 # Notes
 The camera also has httpd which spawns a web server, so some web interface can be made available, the camera has no web interface enabled by default.  
 The firmware upgrade procedure is performed every now and then by querying "https://firmware.safebyswann.com" with the camera version and some other fields, all the upgrades seem to be OTA, not full fledged filesystems and they are just a tar file with the contents of `/mnt/mtd`. The upgrades are stored in `/mnt/mtd/upgrades`  
 How `aoni_ipc` works behind the scenes, at least to activate the floodlights, is by calling the `himm` command, whcih I believe it allows to set/read the GPIO, for example to set the lights on issue `hmmi 0x2013000c 7`, to set them off issue `hmmi 0x2013000c 0`.  
-There is a driver to interact with the PIR sensor but I didn't dive on how it works exactly.
+There is a driver to interact with the PIR sensor but I didn't dive on how it works exactly.  
 The firmware on my camera is `v1.5.3`
 
 Enjoy!
