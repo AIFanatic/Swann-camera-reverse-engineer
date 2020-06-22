@@ -1,29 +1,29 @@
 # Overview
-Another month and another device that has robust hardware but the software simply sucks.
-I'm talking about the "Swann floodlight security camera", Swann has something like 10 apps to deal with the different hardware they sell, they are all extremely outdated or simply do not work.
+Another month and another device that has robust hardware but the software simply sucks.  
+I'm talking about the "Swann floodlight security camera", Swann has something like 10 apps to deal with the different hardware they sell, they are all extremely outdated or simply do not work.  
 
-I bought a SWWHD-FLOCAM and though the Swann apps were clearly outdated, it worked more or less.
+I bought a SWWHD-FLOCAM and though the Swann apps were clearly outdated, it worked more or less.  
 
 # The problem
-Around a month ago I started receiving notifications saying that the existing app "SAFE by Swann" would stop working since "The software company we used to build the SAFE by Swann app has recently had financial troubles and are ceased operating, leaving us with a problem."
+Around a month ago I started receiving notifications saying that the existing app "SAFE by Swann" would stop working since "The software company we used to build the SAFE by Swann app has recently had financial troubles and are ceased operating, leaving us with a problem."  
 
-The recommendation is to download yet another app called "SwannSecurity".
-Me being an understanding customer, I proceeded to do so.
-Here is where the problems started, the camera just wouldn't sync/setup with the new app.
-I tried everything I could think of to get it working but no luck (everything with the exception of contacting Swann of course, I'm to shy). My suspicion is that the device creates a Wifi access point with a different name than what the app is expecting.
+The recommendation is to download yet another app called "SwannSecurity".  
+Me being an understanding customer, I proceeded to do so.  
+Here is where the problems started, the camera just wouldn't sync/setup with the new app.  
+I tried everything I could think of to get it working but no luck (everything with the exception of contacting Swann of course, I'm to shy). My suspicion is that the device creates a Wifi access point with a different name than what the app is expecting.  
 
 # Last resort AKA reverse engineer
 
 ## Discovery
-Secretly excited that nothing worked it gave me an excuse to poke around. This is after all a security camera, I was eager to get it working.
-Opening the device a Hi3518 IC is visible, googling a bit it seems that some poke work has been done already for similar cameras. The chip itself is pretty much open source with an SDK and toolchain available.
+Secretly excited that nothing worked it gave me an excuse to poke around. This is after all a security camera, I was eager to get it working.  
+Opening the device a Hi3518 IC is visible, googling a bit it seems that some poke work has been done already for similar cameras. The chip itself is pretty much open source with an SDK and toolchain available.  
 
-After some quick browsing of the PCB the usual glorious "oooo" is seen (oo in this case), the UART port pins that is (TX, RX, VCC, GND).
+After some quick browsing of the PCB the usual glorious "oooo" is seen (oo in this case), the UART port pins that is (TX, RX, VCC, GND).  
 
-The pins are small but I managed to solder some wires to it and fire up the serial monitor and voila, Uboot with a root shell.
+The pins are small but I managed to solder some wires to it and fire up the serial monitor and voila, Uboot with a root shell.  
 
-If the keyboard is smashed while the device is rebooting the booting procedure is halted and a Uboot shell is provided, a new filesystem can be flashed this way using `sf` and some `loadb` trickery. Even though tftp is available the camera doesn't have any network ports, therefore loading binary files over the serial port is required, there also seems to be a way of loading files over USB and I can recognize the micro-usb pins on the sdcard pcb but nothing is soldered there, thanks Swann.
-Also sdcard? What sdcard? The camera has no sdcard visible/accessible but after opening the camera there is a pcb that has the reset button, sdcard with a 8GB card and usb.
+If the keyboard is smashed while the device is rebooting the booting procedure is halted and a Uboot shell is provided, a new filesystem can be flashed this way using `sf` and some `loadb` trickery. Even though tftp is available the camera doesn't have any network ports, therefore loading binary files over the serial port is required, there also seems to be a way of loading files over USB and I can recognize the micro-usb pins on the sdcard pcb but nothing is soldered there, thanks Swann.  
+Also sdcard? What sdcard? The camera has no sdcard visible/accessible but after opening the camera there is a pcb that has the reset button, sdcard with a 8GB card and usb.  
 
 ## Digging through the OS
 
@@ -40,7 +40,7 @@ $ which ftpd
 ```
 
 After finding that the device had telnet I proceeded to fire it up by issuing `telnetd &`.
-This sucessfully spawned telnet but after trying to connect it required the root login which the password was nowhere to be seen (UART autologins as root).
+This sucessfully spawned telnet but after trying to connect it required the root login which the password was nowhere to be seen (UART autologins as root).  
 
 Seeing all the crappy passwords that this types of devices have I thought it couldn't be to hard to get it:
 ```
@@ -58,7 +58,7 @@ operator:*:12963:0:99999:7:::
 nobody:*:12963:0:99999:7:::
 ```
 
-Hum, is that DESCrypt? Isn't descrypt vulnerable to collisions? Nice choice.
+Hum, is that DESCrypt? Isn't descrypt vulnerable to collisions? Nice choice.  
 Anyway its salted, john the ripper with the rockyou wordlist or brute force yielded nothing but hashcat took care of it in 1 minute or so `AxF/qjbydMnd.:a0n1ipc`
 
 After looking around the filesystem is mounted as read-only but the files that actually manage the camera are mounted at `/mnt/mtd` as read-write, so the poking continues.
@@ -118,13 +118,13 @@ $ ps xa
  ...
 ```
 
-The running apps got me interested, so I did what any sane person does and tried to break things, killing each of the processes until the camera became unresponsive in the iOS app.
-This resulted in me realising that `cloud_*` apps are responsible for spying on me and the `aoni_ipc` is the actual camera management app.
-Also note that a rtsp address is cleary present at `rtsp://<camera_ip>:8282/av0_0` and it can be accessed sucessfully with VLC, yet, Swann states that the camera does not have any rtsp interface.
+The running apps got me interested, so I did what any sane person does and tried to break things, killing each of the processes until the camera became unresponsive in the iOS app.  
+This resulted in me realising that `cloud_*` apps are responsible for spying on me and the `aoni_ipc` is the actual camera management app.  
+Also note that a rtsp address is cleary present at `rtsp://<camera_ip>:8282/av0_0` and it can be accessed sucessfully with VLC, yet, Swann states that the camera does not have any rtsp interface.  
 
 ### API
-The camera more or less works with all the cloud apps closed but not when `aoni_ipc` is closed.
-So I proceeded to kill the app and spawn it in a telnet shell in order to get some more info, this resulted in a very verbose log and it seems that the app has some kind of API, sweet.
+The camera more or less works with all the cloud apps closed but not when `aoni_ipc` is closed.  
+So I proceeded to kill the app and spawn it in a telnet shell in order to get some more info, this resulted in a very verbose log and it seems that the app has some kind of API, sweet.  
 After popping the binary in ida/ghidra and digging a bit the main method that handles all API calls looks as follows:
 ```
  char *pcVar1;
@@ -329,7 +329,7 @@ After popping the binary in ida/ghidra and digging a bit the main method that ha
         }
 ```
 
-I got to admit, the first API call "telnet enable" made me feel a bit better about Swann, since by being able to enable telnet using an API new users don't need to physically open the camera in order to fiddle with it.
+I got to admit, the first API call "telnet enable" made me feel a bit better about Swann, since by being able to enable telnet using an API new users don't need to physically open the camera in order to fiddle with it.  
 
 The API works by sending raw TCP commands to port 9030, so for example to turn on the flood lights the following can be sent:
 ```
@@ -346,9 +346,9 @@ $ {"req":"telnet enable","state":"enable","type":1}
 "telnet enable" state needs to be "enable" not "on", enable, on, 1, who cares.
 
 # Notes
-The camera also has httpd which spawns a web server, so some web interface can be made available, the camera has no web interface enabled by default.
-The firmware upgrade procedure is performed every now and then by querying "https://firmware.safebyswann.com" with the camera version and some other fields, all the upgrades seem to be OTA, not full fledged filesystems and they are just a tar file with the contents of `/mnt/mtd`. The upgrades are stored in `/mnt/mtd/upgrades`
-How `aoni_ipc` works behind the scenes, at least to activate the floodlights, is by calling the `himm` command, whcih I believe it allows to set/read the GPIO, for example to set the lights on issue `hmmi 0x2013000c 7`, to set them off issue `hmmi 0x2013000c 0`.
+The camera also has httpd which spawns a web server, so some web interface can be made available, the camera has no web interface enabled by default.  
+The firmware upgrade procedure is performed every now and then by querying "https://firmware.safebyswann.com" with the camera version and some other fields, all the upgrades seem to be OTA, not full fledged filesystems and they are just a tar file with the contents of `/mnt/mtd`. The upgrades are stored in `/mnt/mtd/upgrades`  
+How `aoni_ipc` works behind the scenes, at least to activate the floodlights, is by calling the `himm` command, whcih I believe it allows to set/read the GPIO, for example to set the lights on issue `hmmi 0x2013000c 7`, to set them off issue `hmmi 0x2013000c 0`.  
 There is a driver to interact with the PIR sensor but I didn't dive on how it works exactly.
 The firmware on my camera is `v1.5.3`
 
