@@ -1,5 +1,3 @@
-Reverse engineer Swann camera
-
 # Overview
 Another month and another device that has robust hardware but the software simply sucks.
 I'm talking about the "Swann floodlight security camera", Swann has something like 10 apps to deal with the different hardware they sell, they are all extremely outdated or simply do not work.
